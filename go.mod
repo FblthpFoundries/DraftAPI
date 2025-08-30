@@ -1,3 +1,5 @@
-module github.com/jacksowe000/DraftAPI
+module github.com/FblthpFoundries/DraftAPI
 
 go 1.25.0
+
+require github.com/google/uuid v1.6.0 // indirect
