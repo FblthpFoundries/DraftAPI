@@ -1,4 +1,4 @@
-package room
+package common
 
 import(
 	"fmt"
@@ -12,12 +12,12 @@ import(
 
 //Handles finding rooms from db
 type RoomServer struct{
-	Cache  map[uuid.UUID]*Room
+	DBRef *DataBase
 	sync.Mutex
 }
 
-func NewRoomServer() *RoomServer{
-	rs := RoomServer{Cache: make(map[uuid.UUID]*Room)}
+func NewRoomServer(d *DataBase) *RoomServer{
+	rs := RoomServer{DBRef: d}
 
 	return &rs
 }
@@ -39,9 +39,8 @@ func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) {
 		Players: make([]uuid.UUID, 8),
 	}
 
-	rs.Cache[room.Id] = &room 	
-
 	w.WriteHeader(http.StatusOK)
+	fmt.Println(room.Id)
 }
 
 func (room *Room) AddPlayer(w http.ResponseWriter, r *http.Request){

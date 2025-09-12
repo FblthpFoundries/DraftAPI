@@ -3,14 +3,19 @@ package main
 import(
 	"fmt"
 	"net/http"
-	"github.com/FblthpFoundries/DraftAPI/room"
-	"github.com/FblthpFoundries/DraftAPI/player"
+	"github.com/FblthpFoundries/DraftAPI/common"
 )
 
 func main(){
+	fmt.Println("Here?")
+	dataBase := common.OpenDB()
+	defer dataBase.CloseDB()
+	
 	mux := http.NewServeMux()
-	rs := room.NewRoomServer()
-	ps := player.NewPlayerServer()
+
+	rs := common.NewRoomServer(dataBase)
+	ps := common.NewPlayerServer(dataBase)
+
 	mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request){
 		fmt.Fprint(w, "World")
 	})

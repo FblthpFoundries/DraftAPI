@@ -1,13 +1,11 @@
-package player
+package common
 
-import(
+import (
 	"fmt"
 	"net/http"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	//"time"
 	"sync"
-	//"strconv"
 	"encoding/json"
 )
 
@@ -19,13 +17,13 @@ type Player struct{
 }
 
 type PlayerServer struct{
-	Cache map[uuid.UUID]*Player
+	DBRef *DataBase
 	sync.Mutex	
 }
 
-func NewPlayerServer() *PlayerServer{
+func NewPlayerServer(d *DataBase) *PlayerServer{
 	ps := PlayerServer{
-		Cache : make(map[uuid.UUID]*Player),
+		DBRef: d,
 	}
 	
 	return &ps
@@ -36,15 +34,11 @@ func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request){
 	p := Player{
 		Id: uuid.New(),
 	}
-	ps.Lock()
-	defer ps.Unlock()
-	ps.Cache[p.Id] = &p
 	
 	fmt.Println(p.Id)
 	js, err := json.Marshal(map[string]uuid.UUID{"Id":p.Id})
 
 	if err != nil{
-		delete(ps.Cache, p.Id)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
