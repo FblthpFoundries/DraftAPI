@@ -26,6 +26,7 @@ require (
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/ostafen/clover v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
