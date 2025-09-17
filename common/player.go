@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"net/http"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"sync"
 	"encoding/json"
@@ -12,7 +11,7 @@ import (
 var upgrader = websocket.Upgrader{}
 
 type Player struct{
-	Id uuid.UUID
+	Id string 
 	Sock websocket.Conn
 }
 
@@ -31,12 +30,10 @@ func NewPlayerServer(d *DataBase) *PlayerServer{
 
 
 func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request){
-	p := Player{
-		Id: uuid.New(),
-	}
-	
-	fmt.Println(p.Id)
-	js, err := json.Marshal(map[string]uuid.UUID{"Id":p.Id})
+	pId := ps.DBRef.NewPlayer()
+
+	fmt.Println(pId)
+	js, err := json.Marshal(map[string]string{"playerId":pId})
 
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusBadRequest)

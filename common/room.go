@@ -5,7 +5,6 @@ import(
 	"net/http"
 	"time"
 	"sync"
-	"strconv"
 	"encoding/json"
 )
 
@@ -38,32 +37,48 @@ func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) {
 
 	rId := rs.DBRef.CreateRoom(&room)
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("content-type", "application/json")
 	js, _ := json.Marshal(map[string]string {"roomId": rId})
 	w.Write(js)
 	fmt.Println(rId)
 }
 
-func (room *Room) AddPlayer(w http.ResponseWriter, r *http.Request){
-	id, err := strconv.Atoi(r.PathValue("playerId"))
-
-	fmt.Print(id)
-
-	if err != nil{
-		http.Error(w, "No Player Id", http.StatusBadRequest)
-		return	
-	}
-	
-	js, err := json.Marshal(room)
-	if err != nil{
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	w.Header().Set("content-type", "application/json")
-	w.Write(js)
-
-}
 
 func (rs *RoomServer) AddPlayer(w http.ResponseWriter, r *http.Request){
 	
+	rid := r.PathValue("roomId")
+
+	fmt.Print(rid)
+
+	if rid == ""{
+		http.Error(w, "No room Id", http.StatusBadRequest)
+		return	
+	}
+
+	exists := rs.DBRef.RoomExists(rid)
+	
+	if ! exists{
+		http.Error(w, "Room does not exist", http.StatusBadRequest)
+		return
+	}
+	
+	pid := r.PathValue("playerId")
+
+	fmt.Print(pid)
+
+	if pid == ""{
+		http.Error(w, "No Player Id", http.StatusBadRequest)
+		return	
+	}
+
+	exists = rs.DBRef.PlayerExists(pid)
+	
+	if ! exists{
+		http.Error(w, "Player does not exist", http.StatusBadRequest)
+		return
+	}
+
+	rs.DBRef.JoinRoom(pid, rid)
+	
+	w.WriteHeader(http.StatusOK)
 }

@@ -22,7 +22,8 @@ func main(){
 
 
 	mux.HandleFunc("POST /newRoom", rs.NewRoom)
-	mux.HandleFunc("POST /register", ps.NewPlayer)
+	mux.HandleFunc("POST /newPlayer", ps.NewPlayer)
+	mux.HandleFunc("POST /register/{roomId}/{playerId}", rs.AddPlayer)
 
 	fmt.Println("This Bitch is Serving")
 
