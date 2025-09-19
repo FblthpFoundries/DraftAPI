@@ -3,6 +3,8 @@ import (
 	"fmt"
 	c "github.com/ostafen/clover"
 	"sync"
+	"net/http"
+	"io"
 )
 
 type DataBase struct{
@@ -82,6 +84,7 @@ func (base *DataBase) JoinRoom(pId string, rId string){
 	newPlayers := make([]string, 8)
 	insertIdx := 0
 
+	//copy over existing players
 	for idx, p := range room.Players{
 		if p == ""{
 			break
@@ -91,11 +94,34 @@ func (base *DataBase) JoinRoom(pId string, rId string){
 		insertIdx += 1
 	}
 
+	//add new player
 	newPlayers[insertIdx] = pId
 
+	//update document
 	updates := make(map[string]interface{})
 	updates["Players"] = newPlayers
 
 	base.db.Query("rooms").UpdateById(rId, updates)
 
+}
+
+func (base *DataBase) GetSet(set string) []*c.Document {
+	base.Lock()
+	res, _ := base.db.HasCollection(set)
+	base.Unlock()
+
+	//Already retrieved set info so return document ref
+	if res{
+		cards, _ := base.db.Query(set).FindAll()
+		return cards
+	}
+
+	url := "https://api.scryfall.com/sets/" + set
+	req, _ := http.NewRequest("GET", url, nil)
+	resp, _ := http.DefaultClient.Do(req)
+
+	body, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(body[:]))
+
+	return make([]*c.Document, 8)
 }

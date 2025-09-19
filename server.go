@@ -13,17 +13,20 @@ func main(){
 	
 	mux := http.NewServeMux()
 
-	rs := common.NewRoomServer(dataBase)
-	ps := common.NewPlayerServer(dataBase)
+	roomServer := common.NewRoomServer(dataBase)
+	playerServer := common.NewPlayerServer(dataBase)
+	packServer := common.NewPackServer(dataBase)
+	
 
 	mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request){
 		fmt.Fprint(w, "World")
 	})
 
 
-	mux.HandleFunc("POST /newRoom", rs.NewRoom)
-	mux.HandleFunc("POST /newPlayer", ps.NewPlayer)
-	mux.HandleFunc("POST /register/{roomId}/{playerId}", rs.AddPlayer)
+	mux.HandleFunc("POST /newRoom", roomServer.NewRoom)
+	mux.HandleFunc("POST /newPlayer", playerServer.NewPlayer)
+	mux.HandleFunc("POST /register/{roomId}/{playerId}", roomServer.AddPlayer)
+	mux.HandleFunc("GET /getSet", packServer.GeneratePacks)
 
 	fmt.Println("This Bitch is Serving")
 
