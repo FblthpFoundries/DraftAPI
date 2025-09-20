@@ -1,5 +1,6 @@
 package common
 import (
+	"encoding/json"
 	"fmt"
 	c "github.com/ostafen/clover"
 	"sync"
@@ -105,6 +106,19 @@ func (base *DataBase) JoinRoom(pId string, rId string){
 
 }
 
+type cardData struct {
+	scryfall_id	string		`json:"id"`
+	name		string		`json:"name"`	
+	images		cardImages	`json:"image_uris"`
+}
+
+type cardImages struct{
+	small	string	`json:"small"`
+	normal	string	`json:"normal"`
+	large	string	`json:"large"`
+	png		string	`json:"png"`
+}
+
 func (base *DataBase) GetSet(set string) []*c.Document {
 	base.Lock()
 	res, _ := base.db.HasCollection(set)
@@ -115,13 +129,71 @@ func (base *DataBase) GetSet(set string) []*c.Document {
 		cards, _ := base.db.Query(set).FindAll()
 		return cards
 	}
-
+	
+	//Get scryfall page with all cards in set
 	url := "https://api.scryfall.com/sets/" + set
 	req, _ := http.NewRequest("GET", url, nil)
 	resp, _ := http.DefaultClient.Do(req)
 
 	body, _ := io.ReadAll(resp.Body)
-	fmt.Println(string(body[:]))
+		
+	bodyJson := map[string]string{}
+	json.Unmarshal(body, &bodyJson)
+	resp.Body.Close()
+
+	//request cards in set
+	page := map[string]any{}
+	var cards []cardData
+	req, _ = http.NewRequest("GET", bodyJson["search_uri"], nil)
+	resp, _ = http.DefaultClient.Do(req)
+	body, _ = io.ReadAll(resp.Body)
+
+	json.Unmarshal(body, &page)
+	cards = unmarshalCards(page["data"].([]any))
+	resp.Body.Close()
+
+	//depaginate subsequent pages
+	for page["has_more"].(bool){
+		url = page["next_page"].(string)
+
+		req, _ = http.NewRequest("GET", url, nil)
+		resp, _ = http.DefaultClient.Do(req)
+		body, _ = io.ReadAll(resp.Body)
+		page = map[string]any{}
+		json.Unmarshal(body, &page)
+		resp.Body.Close()
+		
+		nextCards := unmarshalCards(page["data"].([]any))
+
+		cards = append(cards, nextCards...)
+	}
+
+	fmt.Println(cards[len(cards)-1])
+		
+	//fmt.Println(page["data"].([]any)[0].(map[string]any)["name"])
 
 	return make([]*c.Document, 8)
+}
+
+func unmarshalCards(data []any) []cardData{
+	var cards []cardData
+	var card map[string]any
+	var imageData map[string]any
+	for _, c:= range data{
+		card = c.(map[string]any)
+		imageData = card["image_uris"].(map[string]any)
+		card := cardData{
+					scryfall_id : card["id"].(string),
+					name		: card["name"].(string),
+					images		: cardImages{
+									small: 	imageData["small"].(string),
+									normal: imageData["normal"].(string),
+									large:	imageData["large"].(string),
+									png:	imageData["png"].(string),
+								},
+				}
+		cards = append(cards, card)
+	}
+
+	return cards
 }
