@@ -28,8 +28,8 @@ func (base *DataBase) CloseDB(){
 	base.db.Close()
 }
 
-func (base *DataBase) NewPlayer() string{
-	doc := c.NewDocument()
+func (base *DataBase) NewPlayer(p *Player) string{
+	doc := c.NewDocumentOf(p)
 
 	base.Lock()
 	defer base.Unlock()
@@ -71,9 +71,7 @@ func (base *DataBase) RoomExists(rId string) bool{
 
 
 func (base *DataBase) JoinRoom(pId string, rId string){
-	room := &struct{
-		Players []string
-	}{}
+	room := &Room{}
 	
 	base.Lock()
 	defer base.Unlock()
@@ -81,6 +79,7 @@ func (base *DataBase) JoinRoom(pId string, rId string){
 	res, _ := base.db.Query("rooms").FindById(rId)
 
 	res.Unmarshal(room)	
+	fmt.Println(room)
 
 	newPlayers := make([]string, 8)
 	insertIdx := 0
@@ -104,6 +103,20 @@ func (base *DataBase) JoinRoom(pId string, rId string){
 
 	base.db.Query("rooms").UpdateById(rId, updates)
 
+}
+
+func (base *DataBase) GetPlayers(rId string) []string{
+	players := &Room{}
+
+	base.Lock()
+	defer base.Unlock()
+
+	res, _ := base.db.Query("rooms").FindById(rId)
+
+	res.Unmarshal(players)
+	fmt.Println(players)
+
+	return players.Players
 }
 
 type cardData struct {

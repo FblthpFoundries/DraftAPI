@@ -3,16 +3,14 @@ package common
 import (
 	"fmt"
 	"net/http"
-	"github.com/gorilla/websocket"
 	"sync"
 	"encoding/json"
 )
 
-var upgrader = websocket.Upgrader{}
 
 type Player struct{
-	Id string 
-	Sock websocket.Conn
+	IsBot bool
+	Cards []string
 }
 
 type PlayerServer struct{
@@ -29,17 +27,22 @@ func NewPlayerServer(d *DataBase) *PlayerServer{
 }
 
 
-func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request){
-	pId := ps.DBRef.NewPlayer()
+func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request) string{
+	p := &Player{
+		IsBot: false,
+		Cards: make([]string, 45),
+	}
+	pId := ps.DBRef.NewPlayer(p)
 
 	fmt.Println(pId)
 	js, err := json.Marshal(map[string]string{"playerId":pId})
 
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return "BAD"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+	return pId
 }

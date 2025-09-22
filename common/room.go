@@ -27,7 +27,7 @@ type Room struct{
 	Players []string
 }
 
-func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) {
+func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) string {
 	fmt.Println("Huzzah!")
 	room := Room{ 
 		Capacity: 8,
@@ -41,14 +41,17 @@ func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) {
 	js, _ := json.Marshal(map[string]string {"roomId": rId})
 	w.Write(js)
 	fmt.Println(rId)
+
+	return rId
 }
 
 
 func (rs *RoomServer) AddPlayer(w http.ResponseWriter, r *http.Request){
+	r.ParseForm()
 	
-	rid := r.PathValue("roomId")
+	rid := r.Form.Get("rId")
 
-	fmt.Print(rid)
+	fmt.Println(rid)
 
 	if rid == ""{
 		http.Error(w, "No room Id", http.StatusBadRequest)
@@ -62,9 +65,9 @@ func (rs *RoomServer) AddPlayer(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	
-	pid := r.PathValue("playerId")
+	pid := r.Form.Get("pId")
 
-	fmt.Print(pid)
+	fmt.Println(pid)
 
 	if pid == ""{
 		http.Error(w, "No Player Id", http.StatusBadRequest)

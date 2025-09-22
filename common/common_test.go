@@ -3,7 +3,7 @@ package common
 import(
 	"testing"
 	"net/http"
-	"bytes"
+	"net/http/httptest"
 	"github.com/google/uuid"
 )
 
@@ -40,9 +40,12 @@ func setup() *servers{
 	}
 }
 
-func dummyHttp() (http.ResponseWriter, *http.Request){
-	req, _ := http.NewRequest("GET","", bytes.NewReader(make([]byte, 8))) 
-	return dummyWriter{} , req 
+func testHttp(method string, path string) (http.ResponseWriter, *http.Request){
+	return httptest.NewRecorder(), httptest.NewRequest(method, path, nil) 
+}
+
+func testHttpDefault() (http.ResponseWriter, *http.Request){
+	return httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil) 
 }
 
 func (s *servers) cleanup(){
@@ -58,7 +61,7 @@ func TestNewRoom(t *testing.T){
 	s := setup()
 	defer s.cleanup()
 
-	rId := s.roomServer.NewRoom(dummyHttp())
+	rId := s.roomServer.NewRoom(testHttpDefault())
 
 	t.Run("RoomExists", func(t *testing.T){
 		exists := s.db.RoomExists(rId)
@@ -73,6 +76,40 @@ func TestNewRoom(t *testing.T){
 			t.Error("Database has garbage room id")
 		}
 	})
+}
 
+func TestNewPlayer(t *testing.T){
+	s := setup()
+	defer s.cleanup()
 
+	pId := s.playerServer.NewPlayer(testHttpDefault())
+
+	t.Run("PlayerExists", func(t *testing.T){
+		exists := s.db.PlayerExists(pId)
+		if !exists{
+			t.Error("Player not created in database")
+		}
+	})
+	t.Run("PlayerDoesNotExists", func(t *testing.T){
+		exists := s.db.PlayerExists(uuid.New().String())
+		if exists{
+			t.Error("Database has garbage player id")
+		}
+	})
+}
+
+func TestJoinRoom(t *testing.T){
+	s := setup()
+	defer s.cleanup()
+
+	pId := s.playerServer.NewPlayer(testHttpDefault())
+	rId := s.roomServer.NewRoom(testHttpDefault())
+
+	s.roomServer.AddPlayer(testHttp("PUT", "/register?rId=" + rId + "&pId=" + pId))
+
+	players := s.db.GetPlayers(rId)
+
+	if players[0] != pId{
+		t.Error("Player not added to database")
+	}
 }
