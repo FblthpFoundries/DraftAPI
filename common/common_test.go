@@ -14,22 +14,6 @@ type servers struct{
 	db			*DataBase
 }
 
-type dummyWriter struct{
-}
-
-func (w dummyWriter) Header() http.Header{
-	return http.Header{}
-}
-
-func (w dummyWriter) Write(data []byte) (int, error){
-	return 0, nil
-
-}
-
-func (w dummyWriter) WriteHeader(status int){
-	return
-}
-
 func setup() *servers{
 	dataBase := OpenDB()
 	return &servers{
