@@ -1,10 +1,12 @@
 package common
 
 import(
+	"io"
 	"testing"
 	"net/http"
 	"net/http/httptest"
 	"github.com/google/uuid"
+	"encoding/json"
 )
 
 type servers struct{
@@ -24,11 +26,11 @@ func setup() *servers{
 	}
 }
 
-func testHttp(method string, path string) (http.ResponseWriter, *http.Request){
+func testHttp(method string, path string) (*httptest.ResponseRecorder, *http.Request){
 	return httptest.NewRecorder(), httptest.NewRequest(method, path, nil) 
 }
 
-func testHttpDefault() (http.ResponseWriter, *http.Request){
+func testHttpDefault() (*httptest.ResponseRecorder, *http.Request){
 	return httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil) 
 }
 
@@ -41,14 +43,24 @@ func TestSetup(t *testing.T){
 	defer s.cleanup()
 }
 
+
 func TestNewRoom(t *testing.T){
 	s := setup()
 	defer s.cleanup()
+	
+	type jsonData struct{
+		RoomId string	`json:"roomId"` 
+	}
+	var data jsonData
+	w, req := testHttpDefault()
+	s.roomServer.NewRoom(w, req)
+	r := w.Result()
+	body, _ := io.ReadAll(r.Body)
+	json.Unmarshal(body, &data)
 
-	rId := s.roomServer.NewRoom(testHttpDefault())
 
 	t.Run("RoomExists", func(t *testing.T){
-		exists := s.db.RoomExists(rId)
+		exists := s.db.RoomExists(data.RoomId)
 		if !exists{
 			t.Error("Room not created in database")
 		}
@@ -66,10 +78,17 @@ func TestNewPlayer(t *testing.T){
 	s := setup()
 	defer s.cleanup()
 
-	pId := s.playerServer.NewPlayer(testHttpDefault())
+	var data struct{
+		PlayerId string `json:"playerId"`
+	}
+	w, req := testHttpDefault()
+	s.playerServer.NewPlayer(w, req)
+
+	r := w.Result()
+	json.NewDecoder(r.Body).Decode(&data)
 
 	t.Run("PlayerExists", func(t *testing.T){
-		exists := s.db.PlayerExists(pId)
+		exists := s.db.PlayerExists(data.PlayerId)
 		if !exists{
 			t.Error("Player not created in database")
 		}
@@ -85,15 +104,47 @@ func TestNewPlayer(t *testing.T){
 func TestJoinRoom(t *testing.T){
 	s := setup()
 	defer s.cleanup()
+	
+	var pData struct{
+		PlayerId string `json:"playerId"`
+	}
+	var rData struct{
+		RoomId string `json:"roomId"`
+	}
+	w, req := testHttpDefault()
+	s.playerServer.NewPlayer(w, req)
+	r := w.Result()
+	json.NewDecoder(r.Body).Decode(&pData)
 
-	pId := s.playerServer.NewPlayer(testHttpDefault())
-	rId := s.roomServer.NewRoom(testHttpDefault())
+	w, req = testHttpDefault()
+	s.roomServer.NewRoom(w, req)
+	r = w.Result()
+	json.NewDecoder(r.Body).Decode(&rData)
 
-	s.roomServer.AddPlayer(testHttp("PUT", "/register?rId=" + rId + "&pId=" + pId))
+	s.roomServer.AddPlayer(testHttp("PUT", "/register?rId=" + rData.RoomId + "&pId=" + pData.PlayerId))
 
-	players := s.db.GetPlayers(rId)
+	players := s.db.GetPlayers(rData.RoomId)
 
-	if players[0] != pId{
+	if players[0] != pData.PlayerId{
 		t.Error("Player not added to database")
 	}
+}
+
+func TestGetSet(t *testing.T){
+	s := setup()
+	defer s.cleanup()
+	
+	t.Run("GetsNewSet", func(t *testing.T){
+		cards := s.db.GetSet("eoe")
+		if cards == nil{
+			t.Error("failed to get new set")
+		}
+	})
+
+	t.Run("RetrieveSet", func(t *testing.T){
+		cards := s.db.GetSet("eoe")
+		if cards == nil{
+			t.Error("Failed to retrieve set")
+		}
+	})
 }

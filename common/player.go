@@ -27,7 +27,7 @@ func NewPlayerServer(d *DataBase) *PlayerServer{
 }
 
 
-func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request) string{
+func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request) {
 	p := &Player{
 		IsBot: false,
 		Cards: make([]string, 45),
@@ -39,10 +39,8 @@ func (ps *PlayerServer) NewPlayer(w http.ResponseWriter, r * http.Request) strin
 
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "BAD"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
-	return pId
 }

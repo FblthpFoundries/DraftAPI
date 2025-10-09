@@ -27,7 +27,7 @@ type Room struct{
 	Players []string
 }
 
-func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) string {
+func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) {
 	fmt.Println("Huzzah!")
 	room := Room{ 
 		Capacity: 8,
@@ -42,7 +42,6 @@ func (rs *RoomServer) NewRoom(w http.ResponseWriter, r * http.Request) string {
 	w.Write(js)
 	fmt.Println(rId)
 
-	return rId
 }
 
 

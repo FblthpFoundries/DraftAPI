@@ -25,7 +25,7 @@ func main(){
 
 	mux.HandleFunc("POST /newRoom", roomServer.NewRoom)
 	mux.HandleFunc("POST /newPlayer", playerServer.NewPlayer)
-	mux.HandleFunc("POST /register/{roomId}/{playerId}", roomServer.AddPlayer)
+	mux.HandleFunc("POST /register", roomServer.AddPlayer)
 	mux.HandleFunc("GET /getSet", packServer.GeneratePacks)
 
 	fmt.Println("This Bitch is Serving")

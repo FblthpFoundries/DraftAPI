@@ -41,7 +41,7 @@ func (base *DataBase) NewPlayer(p *Player) string{
 
 
 func (base *DataBase) CreateRoom(r *Room) string{
-	doc := c.NewDocumentOf(*r)
+	doc := c.NewDocumentOf(r)
 
 	base.Lock()
 	defer base.Unlock()
@@ -122,6 +122,7 @@ func (base *DataBase) GetPlayers(rId string) []string{
 type cardData struct {
 	scryfall_id	string		`json:"id"`
 	name		string		`json:"name"`	
+	rarity		string		`json:"rarity"`
 	images		cardImages	`json:"image_uris"`
 }
 
@@ -156,7 +157,7 @@ func (base *DataBase) GetSet(set string) []*c.Document {
 
 	//request cards in set
 	page := map[string]any{}
-	var cards []cardData
+	var cards []*cardData
 	req, _ = http.NewRequest("GET", bodyJson["search_uri"], nil)
 	resp, _ = http.DefaultClient.Do(req)
 	body, _ = io.ReadAll(resp.Body)
@@ -182,22 +183,37 @@ func (base *DataBase) GetSet(set string) []*c.Document {
 	}
 
 	fmt.Println(cards[len(cards)-1])
+
+	//Put all card "objects" into document array
+	cardDocs := make([]*c.Document, len(cards))
+	for i , card := range cards{
+		cardDocs[i] = c.NewDocumentOf(card)
+	}
+
+	base.Lock()
+	defer base.Unlock()
+
+	base.db.CreateCollection(set)
+	base.db.Insert(set, cardDocs...)
+
+	
 		
 	//fmt.Println(page["data"].([]any)[0].(map[string]any)["name"])
 
-	return make([]*c.Document, 8)
+	return cardDocs
 }
 
-func unmarshalCards(data []any) []cardData{
-	var cards []cardData
+func unmarshalCards(data []any) []*cardData{
+	var cards []*cardData
 	var card map[string]any
 	var imageData map[string]any
 	for _, c:= range data{
 		card = c.(map[string]any)
 		imageData = card["image_uris"].(map[string]any)
-		card := cardData{
+		cardRef := &cardData{
 					scryfall_id : card["id"].(string),
 					name		: card["name"].(string),
+					rarity		: card["rarity"].(string),
 					images		: cardImages{
 									small: 	imageData["small"].(string),
 									normal: imageData["normal"].(string),
@@ -205,7 +221,7 @@ func unmarshalCards(data []any) []cardData{
 									png:	imageData["png"].(string),
 								},
 				}
-		cards = append(cards, card)
+		cards = append(cards, cardRef)
 	}
 
 	return cards
